@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Alimentos - SENAI</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0D47A1, #1976D2);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      background: rgba(255,255,255,0.95);
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+    }
+
+    header img {
+      height: 60px;
+      margin-right: 15px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      color: #0D47A1;
+      font-weight: bold;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 420px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.6em;
+      color: #0D47A1;
+      text-align: center;
+    }
+
+    .reading {
+      font-size: 1.3em;
+      margin: 8px 0;
+      color: #333;
+    }
+
+    .status {
+      background: #BBDEFB;
+      color: #0D47A1;
+      padding: 10px 15px;
+      border-radius: 12px;
+      margin: 15px 0;
+      font-weight: bold;
+      font-size: 1.1em;
+      text-align: center;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #E3F2FD;
+      margin: 6px 0;
+      padding: 12px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    li:hover {
+      background: #90CAF9;
+      transform: scale(1.02);
+    }
+
+    li span {
+      display: block;
+      font-weight: bold;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #0D47A1;
+      color: white;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #1976D2;
+      transform: scale(1.05);
+    }
+
+    #qr-reader {
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/SENAI_Logo.png" alt="Logo SENAI">
+    <h1>Controle de Alimentos - SENAI</h1>
+  </header>
+
+  <div class="card">
+    <h2>🌡️ Sensor Simulado</h2>
+    <div class="reading" id="temp">Temperatura: -- °C</div>
+    <div class="reading" id="hum">Umidade: -- %</div>
+    <div class="status" id="tempStatus">Status da temperatura: --</div>
+
+    <h3>📋 Produtos cadastrados:</h3>
+    <ul id="productList"></ul>
+
+    <button onclick="atualizarSensor()">Atualizar Sensor</button>
+  </div>
+
+  <div class="card">
+    <h2>📷 Ler QR Code</h2>
+    <div id="qr-reader"></div>
+    <div class="status" id="qrResult">Resultado do QR Code: --</div>
+  </div>
+
+  <script>
+    let produtos = [];
+
+    function atualizarSensor() {
+      const temp = Math.floor(Math.random() * 35);
+      const hum = Math.floor(Math.random() * 100);
+
+      document.getElementById("temp").innerText = `Temperatura: ${temp} °C`;
+      document.getElementById("hum").innerText = `Umidade: ${hum} %`;
+
+      let status = "";
+      if (temp >= 30) status = "🔥 Muito quente";
+      else if (temp >= 20) status = "☀️ Ameno";
+      else if (temp >= 10) status = "🌤️ Fresco";
+      else status = "❄️ Frio";
+
+      document.getElementById("tempStatus").innerText = `Status da temperatura: ${status}`;
+      atualizarListaProdutos();
+    }
+
+    function atualizarListaProdutos() {
+      const list = document.getElementById("productList");
+      list.innerHTML = "";
+
+      produtos.forEach(prod => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span>Produto:</span> ${prod.nome} 
+          <span>Lote:</span> ${prod.lote} 
+          <span>Validade:</span> ${prod.validade}`;
+        list.appendChild(li);
+      });
+    }
+
+    // Função para ler QR Code
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("qrResult").innerText = `QR Lido: ${decodedText}`;
+
+      // Tenta interpretar no formato Produto:XXX;Lote:YYY;Validade:ZZZ
+      let partes = decodedText.split(";");
+      let produto = {};
+      partes.forEach(p => {
+        let [chave, valor] = p.split(":");
+        if (chave && valor) {
+          chave = chave.trim().toLowerCase();
+          valor = valor.trim();
+          if (chave.includes("produto")) produto.nome = valor;
+          if (chave.includes("lote")) produto.lote = valor;
+          if (chave.includes("validade")) produto.validade = valor;
+        }
+      });
+
+      if (produto.nome && produto.lote && produto.validade) {
+        produtos.push(produto);
+        atualizarListaProdutos();
+      }
+    }
+
+    // Inicializa QR Code
+    var html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+
+    // Atualização automática do sensor
+    setInterval(atualizarSensor, 5000);
+    atualizarSensor();
+  </script>
+
+</body>
+</html>
